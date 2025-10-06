@@ -1,0 +1,7 @@
+{
+  "_comment": "City configuration for Kolkata. Fields: rent_baseline (₹/month if Renting; 0 if Own is applied in code), food_multiplier (multiplies a base per-person food cost), transport_baseline (₹/month baseline for public transport; own vehicle may be higher), misc_multiplier (multiplier for miscellaneous costs). All values are safe defaults and can be tuned.",
+  "rent_baseline": 12000,
+  "food_multiplier": 1.10,
+  "transport_baseline": 3000,
+  "misc_multiplier": 1.15
+}
