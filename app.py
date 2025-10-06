@@ -364,9 +364,22 @@ if st.session_state.active_page == "Wizard":
             if st.session_state.advice:
                 results_for_pdf["investment_advice"] = st.session_state.advice
 
-            pie_buf = BytesIO(st.session_state.pie_chart_bytes) if st.session_state.pie_chart_bytes else None
+            # Prefer passing raw bytes directly; generator accepts bytes or BytesIO
+            pie_buf = st.session_state.pie_chart_bytes if st.session_state.pie_chart_bytes else None
+
+            # Prepare optional metadata for header
+            user_name = (st.session_state.profile or {}).get("name") or None
+            user_city = (st.session_state.profile or {}).get("city") or None
+            logo_path = "assets/finmate webp.jpg"  # fallback to existing asset if official logo.png absent
+
             # PDF generation
-            pdf_buffer = generate_pdf(results_for_pdf, pie_buf)
+            pdf_buffer = generate_pdf(
+                results_for_pdf,
+                pie_chart_buffer=pie_buf,
+                user_name=user_name,
+                city=user_city,
+                logo_path=logo_path,
+            )
 
             # Download button
             st.download_button(
