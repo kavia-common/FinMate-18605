@@ -303,14 +303,23 @@ if st.session_state.active_page == "Wizard":
                 png = make_pie_chart(breakdown if isinstance(breakdown, dict) else {})
                 st.session_state.pie_chart_bytes = png
 
-                # Investment advice
-                advice = suggest_investments(
-                    fin.get("income", 0),
-                    prof.get("family_size", 1),
-                    prof.get("city", "Kolkata"),
-                    fin.get("savings_goal", 0),
-                    fin.get("goal_purpose", "") or "",
-                )
+                # Investment advice: use normalized signature (financial inputs + profile)
+                try:
+                    fin_inputs_norm = {
+                        "income": fin.get("income", 0),
+                        "goal_amount": fin.get("savings_goal", 0),
+                        "goal_purpose": fin.get("goal_purpose", "") or "",
+                    }
+                    profile_norm_for_advice = {
+                        "city": prof.get("city", "Kolkata"),
+                        "family_size": prof.get("family_size", 1),
+                        "housing": prof.get("housing", "Own"),
+                        "transport": prof.get("vehicle", prof.get("transport", "Public transport")),
+                        "food": prof.get("food", "Cook at home"),
+                    }
+                    advice = suggest_investments(fin_inputs_norm, profile_norm_for_advice)
+                except Exception as e:
+                    advice = [f"Advice generation error: {e}"]
                 st.session_state.advice = advice
 
                 st.success("Calculated. Proceed to Advice & Report.")
