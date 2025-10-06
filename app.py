@@ -9,7 +9,7 @@ import json
 import streamlit as st
 import matplotlib.pyplot as plt
 
-from utils.calculator import calculate_finance
+from utils.calculator import calculate_finance, load_city_config, calculate
 from utils.report_generator import generate_pdf
 from utils.investment_advisor import suggest_investments
 from utils.validators import (
@@ -273,19 +273,33 @@ if st.session_state.active_page == "Wizard":
                 for fld, msg in {**prof_errs, **fin_errs}.items():
                     st.error(f"{fld}: {msg}")
             else:
-                # Run calculator
-                results = calculate_finance(
-                    fin.get("income", 0),
-                    prof.get("city", "Kolkata"),
-                    prof.get("housing", "Own"),
-                    prof.get("vehicle", "Public transport"),
-                    prof.get("food", "Cook at home"),
-                    prof.get("family_size", 1),
-                )
-                st.session_state.results = results
+                # Run calculator with new API (numeric-only results)
+                try:
+                    base_dir = os.path.dirname(__file__)
+                    city_cfg = load_city_config(base_dir, prof.get("city", "Kolkata"))
+                    fin_inputs = {"income": fin.get("income", 0)}
+                    profile_norm = {
+                        "city": prof.get("city", "Kolkata"),
+                        "housing": prof.get("housing", "Own"),
+                        "transport": prof.get("vehicle", prof.get("transport", "Public transport")),
+                        "food": prof.get("food", "Cook at home"),
+                        "family_size": prof.get("family_size", 1),
+                    }
+                    numeric_results = calculate(fin_inputs, profile_norm, city_cfg)
+                    # Also add a suggested SIP value here for convenience in UI and downstream usage
+                    numeric_results["suggested_sip"] = max(0.0, float(numeric_results.get("savings", 0.0)) * 0.30)
+                    st.session_state.results = numeric_results
+                except Exception as e:
+                    st.session_state.results = None
+                    st.error(f"Calculation failed: {e}")
+                    numeric_results = None
 
-                # Build pie chart from breakdown if present
-                breakdown = results.get("Breakdown") if isinstance(results, dict) else None
+                # Build pie chart from numeric breakdown if present
+                breakdown = None
+                if isinstance(numeric_results, dict):
+                    br = numeric_results.get("breakdown", {})
+                    if isinstance(br, dict):
+                        breakdown = br
                 png = make_pie_chart(breakdown if isinstance(breakdown, dict) else {})
                 st.session_state.pie_chart_bytes = png
 
