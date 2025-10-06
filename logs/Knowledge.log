@@ -1,0 +1,128 @@
+2025-10-06 13:15:16,107 - Knowledge - INFO - Redis support added with prefix knowledge:b92166o:
+2025-10-06 13:15:16,340 - Knowledge - INFO - load persisted knowledge: begin
+2025-10-06 13:15:16,436 - Knowledge - INFO - load persisted knowledge: end
+2025-10-06 13:15:16,538 - Knowledge - INFO - load persisted docinfo: begin
+2025-10-06 13:15:16,623 - Knowledge - INFO - load persisted docinfo: end
+2025-10-06 13:15:16,728 - Knowledge - INFO - worker kw1 created with dedicated MongoDB connection (total: 1)
+2025-10-06 13:15:16,850 - Knowledge - INFO - knowledge worker kw1 start
+2025-10-06 13:15:16,852 - Knowledge - INFO - worker kw2 created with dedicated MongoDB connection (total: 2)
+2025-10-06 13:15:16,925 - Knowledge - INFO - worker kw1 pull /app/data/T0031/18605/b92166o/FinMate-18605/app.py from ingest queue
+2025-10-06 13:15:17,004 - Knowledge - INFO - knowledge worker kw2 start
+2025-10-06 13:15:17,006 - Knowledge - INFO - worker kw3 created with dedicated MongoDB connection (total: 3)
+2025-10-06 13:15:17,149 - Knowledge - INFO - process ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/app.py
+2025-10-06 13:15:17,211 - Knowledge - INFO - worker kw2 pull /app/data/T0031/18605/b92166o/FinMate-18605/requirements.txt from ingest queue
+2025-10-06 13:15:17,305 - Knowledge - INFO - knowledge worker kw3 start
+2025-10-06 13:15:17,308 - Knowledge - INFO - worker kw4 created with dedicated MongoDB connection (total: 4)
+2025-10-06 13:15:17,397 - Knowledge - INFO - Found code-base-name: https://github.com/kavia-common/FinMate-18605.git:kavia-main
+2025-10-06 13:15:17,526 - Knowledge - INFO - process ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/requirements.txt
+2025-10-06 13:15:17,590 - Knowledge - INFO - worker kw3 pull /app/data/T0031/18605/b92166o/FinMate-18605/utils/calculator.py from ingest queue
+2025-10-06 13:15:17,699 - Knowledge - INFO - knowledge worker kw4 start
+2025-10-06 13:15:17,705 - Knowledge - INFO - worker kw5 created with dedicated MongoDB connection (total: 5)
+2025-10-06 13:15:17,795 - Knowledge - INFO - Found code_base: <app.utils.kg_build.knowledge.KnowledgeCodeBase object at 0x7f6cc99faed0>
+2025-10-06 13:15:17,890 - Knowledge - INFO - Found code-base-name: https://github.com/kavia-common/FinMate-18605.git:kavia-main
+2025-10-06 13:15:18,020 - Knowledge - INFO - process ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/utils/calculator.py
+2025-10-06 13:15:18,093 - Knowledge - INFO - worker kw4 pull /app/data/T0031/18605/b92166o/FinMate-18605/utils/report_generator.py from ingest queue
+2025-10-06 13:15:18,172 - Knowledge - INFO - knowledge worker kw5 start
+2025-10-06 13:15:18,178 - Knowledge - INFO - worker kw6 created with dedicated MongoDB connection (total: 6)
+2025-10-06 13:15:18,302 - Knowledge - INFO - persist ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/app.py
+2025-10-06 13:15:18,393 - Knowledge - INFO - Found code_base: <app.utils.kg_build.knowledge.KnowledgeCodeBase object at 0x7f6cc99faed0>
+2025-10-06 13:15:18,513 - Knowledge - INFO - Found code-base-name: https://github.com/kavia-common/FinMate-18605.git:kavia-main
+2025-10-06 13:15:18,640 - Knowledge - INFO - process ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/utils/report_generator.py
+2025-10-06 13:15:18,678 - Knowledge - INFO - worker kw5 pull /app/data/T0031/18605/b92166o/FinMate-18605/utils/investment_advisor.py from ingest queue
+2025-10-06 13:15:18,773 - Knowledge - INFO - knowledge worker kw6 start
+2025-10-06 13:15:18,774 - Knowledge - INFO - worker kw7 created with dedicated MongoDB connection (total: 7)
+2025-10-06 13:15:18,899 - Knowledge - INFO - adding /app/data/T0031/18605/b92166o/FinMate-18605/app.py to ingest queue
+2025-10-06 13:15:18,974 - Knowledge - INFO - persist ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/requirements.txt
+2025-10-06 13:15:19,056 - Knowledge - INFO - Found code_base: <app.utils.kg_build.knowledge.KnowledgeCodeBase object at 0x7f6cc99faed0>
+2025-10-06 13:15:19,283 - Knowledge - INFO - process ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/utils/investment_advisor.py
+2025-10-06 13:15:19,463 - Knowledge - INFO - knowledge worker kw7 start
+2025-10-06 13:15:19,569 - Knowledge - INFO - Found code-base-name: https://github.com/kavia-common/FinMate-18605.git:kavia-main
+2025-10-06 13:15:19,569 - Knowledge - INFO - worker kw6 pull /app/data/T0031/18605/b92166o/FinMate-18605/README.md from ingest queue
+2025-10-06 13:15:19,570 - Knowledge - INFO - worker kw1 pull /app/data/T0031/18605/b92166o/FinMate-18605/fileStructure.txt from ingest queue
+2025-10-06 13:15:19,835 - Knowledge - INFO - adding /app/data/T0031/18605/b92166o/FinMate-18605/requirements.txt to ingest queue
+2025-10-06 13:15:19,906 - Knowledge - INFO - persist ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/utils/calculator.py
+2025-10-06 13:15:20,198 - Knowledge - INFO - Found code_base: <app.utils.kg_build.knowledge.KnowledgeCodeBase object at 0x7f6cc99faed0>
+2025-10-06 13:15:20,313 - Knowledge - INFO - process ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/README.md
+2025-10-06 13:15:20,381 - Knowledge - INFO - process ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/fileStructure.txt
+2025-10-06 13:15:20,431 - Knowledge - INFO - Found code-base-name: https://github.com/kavia-common/FinMate-18605.git:kavia-main
+2025-10-06 13:15:20,434 - Knowledge - INFO - worker kw7 pull /app/data/T0031/18605/b92166o/FinMate-18605/app.py from ingest queue
+2025-10-06 13:15:20,434 - Knowledge - INFO - worker kw2 pull /app/data/T0031/18605/b92166o/FinMate-18605/requirements.txt from ingest queue
+2025-10-06 13:15:20,572 - Knowledge - INFO - adding /app/data/T0031/18605/b92166o/FinMate-18605/utils/calculator.py to ingest queue
+2025-10-06 13:15:20,625 - Knowledge - INFO - persist ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/utils/report_generator.py
+2025-10-06 13:15:20,895 - Knowledge - INFO - Found code_base: <app.utils.kg_build.knowledge.KnowledgeCodeBase object at 0x7f6cc99faed0>
+2025-10-06 13:15:21,014 - Knowledge - INFO - Thread kw7 - File app.py - Remaining files in queue: 0
+2025-10-06 13:15:21,100 - Knowledge - INFO - Thread kw2 - File requirements.txt - Remaining files in queue: 0
+2025-10-06 13:15:21,205 - Knowledge - INFO - Found code-base-name: https://github.com/kavia-common/FinMate-18605.git:kavia-main
+2025-10-06 13:15:21,206 - Knowledge - INFO - Found code-base-name: https://github.com/kavia-common/FinMate-18605.git:kavia-main
+2025-10-06 13:15:21,206 - Knowledge - INFO - worker kw3 pull /app/data/T0031/18605/b92166o/FinMate-18605/utils/calculator.py from ingest queue
+2025-10-06 13:15:21,359 - Knowledge - INFO - adding /app/data/T0031/18605/b92166o/FinMate-18605/utils/report_generator.py to ingest queue
+2025-10-06 13:15:21,408 - Knowledge - INFO - persist ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/utils/investment_advisor.py
+2025-10-06 13:15:21,523 - Knowledge - INFO - start ingest for /app/data/T0031/18605/b92166o/FinMate-18605/app.py
+2025-10-06 13:15:21,615 - Knowledge - INFO - start ingest for /app/data/T0031/18605/b92166o/FinMate-18605/requirements.txt
+2025-10-06 13:15:21,706 - Knowledge - INFO - Found code_base: <app.utils.kg_build.knowledge.KnowledgeCodeBase object at 0x7f6cc99faed0>
+2025-10-06 13:15:21,804 - Knowledge - INFO - Found code_base: <app.utils.kg_build.knowledge.KnowledgeCodeBase object at 0x7f6cc99faed0>
+2025-10-06 13:15:21,882 - Knowledge - INFO - Thread kw3 - File calculator.py - Remaining files in queue: 0
+2025-10-06 13:15:21,979 - Knowledge - INFO - worker kw4 pull /app/data/T0031/18605/b92166o/FinMate-18605/utils/report_generator.py from ingest queue
+2025-10-06 13:15:22,106 - Knowledge - INFO - adding /app/data/T0031/18605/b92166o/FinMate-18605/utils/investment_advisor.py to ingest queue
+2025-10-06 13:15:22,256 - Knowledge - INFO - Fast-track processing for simple file: /app/data/T0031/18605/b92166o/FinMate-18605/requirements.txt
+2025-10-06 13:15:22,346 - Knowledge - INFO - persist ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/README.md
+2025-10-06 13:15:22,440 - Knowledge - INFO - persist ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/fileStructure.txt
+2025-10-06 13:15:22,548 - Knowledge - INFO - start ingest for /app/data/T0031/18605/b92166o/FinMate-18605/utils/calculator.py
+2025-10-06 13:15:22,632 - Knowledge - INFO - Thread kw4 - File report_generator.py - Remaining files in queue: 0
+2025-10-06 13:15:23,283 - Knowledge - INFO - start ingest for /app/data/T0031/18605/b92166o/FinMate-18605/utils/report_generator.py
+2025-10-06 13:15:22,854 - Knowledge - INFO - done fast ingest for /app/data/T0031/18605/b92166o/FinMate-18605/requirements.txt
+2025-10-06 13:15:23,043 - Knowledge - INFO - adding /app/data/T0031/18605/b92166o/FinMate-18605/README.md to ingest queue
+2025-10-06 13:15:22,745 - Knowledge - INFO - worker kw5 pull /app/data/T0031/18605/b92166o/FinMate-18605/utils/investment_advisor.py from ingest queue
+2025-10-06 13:15:23,470 - Knowledge - INFO - process ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/requirements.txt
+2025-10-06 13:15:23,657 - Knowledge - INFO - worker kw6 pull /app/data/T0031/18605/b92166o/FinMate-18605/README.md from ingest queue
+2025-10-06 13:15:23,658 - Knowledge - INFO - adding /app/data/T0031/18605/b92166o/FinMate-18605/fileStructure.txt to ingest queue
+2025-10-06 13:15:23,708 - Knowledge - INFO - Thread kw5 - File investment_advisor.py - Remaining files in queue: 0
+2025-10-06 13:15:23,910 - Knowledge - INFO - Thread kw6 - File README.md - Remaining files in queue: 0
+2025-10-06 13:15:24,030 - Knowledge - INFO - worker kw1 pull /app/data/T0031/18605/b92166o/FinMate-18605/fileStructure.txt from ingest queue
+2025-10-06 13:15:24,036 - Knowledge - INFO - Found code-base-name: https://github.com/kavia-common/FinMate-18605.git:kavia-main
+2025-10-06 13:15:24,118 - Knowledge - INFO - start ingest for /app/data/T0031/18605/b92166o/FinMate-18605/utils/investment_advisor.py
+2025-10-06 13:15:24,227 - Knowledge - INFO - start ingest for /app/data/T0031/18605/b92166o/FinMate-18605/README.md
+2025-10-06 13:15:24,340 - Knowledge - INFO - Thread kw1 - File fileStructure.txt - Remaining files in queue: 0
+2025-10-06 13:15:24,462 - Knowledge - INFO - Found code_base: <app.utils.kg_build.knowledge.KnowledgeCodeBase object at 0x7f6cc99faed0>
+2025-10-06 13:15:24,640 - Knowledge - INFO - Fast-track processing for simple file: /app/data/T0031/18605/b92166o/FinMate-18605/README.md
+2025-10-06 13:15:24,757 - Knowledge - INFO - start ingest for /app/data/T0031/18605/b92166o/FinMate-18605/fileStructure.txt
+2025-10-06 13:15:24,837 - Knowledge - INFO - persist ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/requirements.txt
+2025-10-06 13:15:24,927 - Knowledge - INFO - done fast ingest for /app/data/T0031/18605/b92166o/FinMate-18605/README.md
+2025-10-06 13:15:25,041 - Knowledge - INFO - Fast-track processing for simple file: /app/data/T0031/18605/b92166o/FinMate-18605/fileStructure.txt
+2025-10-06 13:15:25,264 - Knowledge - INFO - process ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/README.md
+2025-10-06 13:15:25,417 - Knowledge - INFO - done fast ingest for /app/data/T0031/18605/b92166o/FinMate-18605/fileStructure.txt
+2025-10-06 13:15:25,578 - Knowledge - INFO - Found code-base-name: https://github.com/kavia-common/FinMate-18605.git:kavia-main
+2025-10-06 13:15:25,699 - Knowledge - INFO - process ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/fileStructure.txt
+2025-10-06 13:15:25,832 - Knowledge - INFO - Found code_base: <app.utils.kg_build.knowledge.KnowledgeCodeBase object at 0x7f6cc99faed0>
+2025-10-06 13:15:26,013 - Knowledge - INFO - Found code-base-name: https://github.com/kavia-common/FinMate-18605.git:kavia-main
+2025-10-06 13:15:26,099 - Knowledge - INFO - persist ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/README.md
+2025-10-06 13:15:26,243 - Knowledge - INFO - Found code_base: <app.utils.kg_build.knowledge.KnowledgeCodeBase object at 0x7f6cc99faed0>
+2025-10-06 13:15:26,498 - Knowledge - INFO - persist ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/fileStructure.txt
+2025-10-06 13:15:28,109 - Knowledge - INFO - done ingest for /app/data/T0031/18605/b92166o/FinMate-18605/app.py
+2025-10-06 13:15:28,319 - Knowledge - INFO - process ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/app.py
+2025-10-06 13:15:28,432 - Knowledge - INFO - Found code-base-name: https://github.com/kavia-common/FinMate-18605.git:kavia-main
+2025-10-06 13:15:28,519 - Knowledge - INFO - Found code_base: <app.utils.kg_build.knowledge.KnowledgeCodeBase object at 0x7f6cc99faed0>
+2025-10-06 13:15:28,620 - Knowledge - INFO - persist ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/app.py
+2025-10-06 13:15:28,908 - Knowledge - INFO - done ingest for /app/data/T0031/18605/b92166o/FinMate-18605/utils/report_generator.py
+2025-10-06 13:15:28,988 - Knowledge - INFO - done ingest for /app/data/T0031/18605/b92166o/FinMate-18605/utils/calculator.py
+2025-10-06 13:15:29,032 - Knowledge - INFO - process ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/utils/report_generator.py
+2025-10-06 13:15:29,127 - Knowledge - INFO - done ingest for /app/data/T0031/18605/b92166o/FinMate-18605/utils/investment_advisor.py
+2025-10-06 13:15:29,156 - Knowledge - INFO - process ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/utils/calculator.py
+2025-10-06 13:15:29,349 - Knowledge - INFO - process ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/utils/investment_advisor.py
+2025-10-06 13:15:29,513 - Knowledge - INFO - persist search terms embedding for app.py
+2025-10-06 13:15:29,657 - Knowledge - INFO - Found code-base-name: https://github.com/kavia-common/FinMate-18605.git:kavia-main
+2025-10-06 13:15:29,659 - Knowledge - INFO - Found code-base-name: https://github.com/kavia-common/FinMate-18605.git:kavia-main
+2025-10-06 13:15:29,659 - Knowledge - INFO - Found code-base-name: https://github.com/kavia-common/FinMate-18605.git:kavia-main
+2025-10-06 13:15:29,768 - Knowledge - INFO - Found code_base: <app.utils.kg_build.knowledge.KnowledgeCodeBase object at 0x7f6cc99faed0>
+2025-10-06 13:15:29,874 - Knowledge - INFO - Found code_base: <app.utils.kg_build.knowledge.KnowledgeCodeBase object at 0x7f6cc99faed0>
+2025-10-06 13:15:29,961 - Knowledge - INFO - Found code_base: <app.utils.kg_build.knowledge.KnowledgeCodeBase object at 0x7f6cc99faed0>
+2025-10-06 13:15:30,092 - Knowledge - INFO - persist ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/utils/report_generator.py
+2025-10-06 13:15:30,206 - Knowledge - INFO - persist ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/utils/investment_advisor.py
+2025-10-06 13:15:30,325 - Knowledge - INFO - persist ingested knowledge for /app/data/T0031/18605/b92166o/FinMate-18605/utils/calculator.py
+2025-10-06 13:15:30,797 - Knowledge - INFO - persist search terms embedding for utils/report_generator.py
+2025-10-06 13:15:31,296 - Knowledge - INFO - persist search terms embedding for utils/investment_advisor.py
+2025-10-06 13:15:31,679 - Knowledge - INFO - persist search terms embedding for utils/calculator.py
+2025-10-06 13:15:31,768 - Knowledge - INFO - Knowledge creation complete
+2025-10-06 13:15:31,887 - Knowledge - INFO - Updating org costs, total cost: 0.0012782
+2025-10-06 13:15:32,749 - Knowledge - INFO - Saving knowledge to Redis...
+2025-10-06 13:15:32,853 - Knowledge - INFO - Knowledge saved to Redis successfully
