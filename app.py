@@ -12,6 +12,10 @@ import matplotlib.pyplot as plt
 from utils.calculator import calculate_finance
 from utils.report_generator import generate_pdf
 from utils.investment_advisor import suggest_investments
+from utils.validators import (
+    validate_user_profile,
+    validate_financial_inputs,
+)
 
 # Streamlit app configuration
 st.set_page_config(page_title="FinMate", page_icon=":moneybag:", layout="centered")
@@ -159,6 +163,7 @@ if st.session_state.active_page == "Wizard":
             food = st.selectbox("Food preference", ["Cook at home", "Order food mostly"], index=["Cook at home", "Order food mostly"].index(st.session_state.profile.get("food", "Cook at home")))
             submitted = st.form_submit_button("Save & Continue")
         if submitted:
+            # Update local state first
             st.session_state.profile.update({
                 "name": name,
                 "age": age,
@@ -168,8 +173,22 @@ if st.session_state.active_page == "Wizard":
                 "vehicle": vehicle,
                 "food": food,
             })
-            st.session_state.step = "Income & Goals"
-            st.experimental_rerun()
+            # Validate profile before moving forward
+            is_ok, errs = validate_user_profile({
+                "name": name,
+                "age": age,
+                "city": city,
+                "family_size": family_size,
+                "housing": housing,
+                "transport": vehicle,  # validators accept 'transport' or 'vehicle'
+                "food": food,
+            })
+            if not is_ok:
+                for fld, msg in errs.items():
+                    st.error(f"{fld}: {msg}")
+            else:
+                st.session_state.step = "Income & Goals"
+                st.experimental_rerun()
 
         moved = nav_buttons(prev_label="Back", next_label="Continue", show_prev=False, show_next=False)
 
@@ -183,14 +202,28 @@ if st.session_state.active_page == "Wizard":
             other_expenses_note = st.text_input("Additional expenses note (e.g., EMI, healthcare)", value=st.session_state.financials.get("other_expenses_note", ""))
             submitted = st.form_submit_button("Save & Continue")
         if submitted:
-            st.session_state.financials.update({
+            # Build payload and validate
+            payload = {
                 "income": int(income),
-                "savings_goal": int(savings_goal),
+                "goal_amount": int(savings_goal),
                 "goal_purpose": goal_purpose,
+                "misc_note": other_expenses_note,
+                "savings_goal": int(savings_goal),  # backward field for validator mapping
                 "other_expenses_note": other_expenses_note,
-            })
-            st.session_state.step = "Review & Calculate"
-            st.experimental_rerun()
+            }
+            is_ok, errs = validate_financial_inputs(payload)
+            if not is_ok:
+                for fld, msg in errs.items():
+                    st.error(f"{fld}: {msg}")
+            else:
+                st.session_state.financials.update({
+                    "income": int(income),
+                    "savings_goal": int(savings_goal),
+                    "goal_purpose": goal_purpose,
+                    "other_expenses_note": other_expenses_note,
+                })
+                st.session_state.step = "Review & Calculate"
+                st.experimental_rerun()
 
         moved = nav_buttons(prev_label="Back", next_label="Continue", show_prev=True, show_next=False)
         if moved == "prev":
@@ -217,35 +250,58 @@ if st.session_state.active_page == "Wizard":
 
         # Calculate button
         if st.button("Calculate Report"):
-            # Run calculator
-            results = calculate_finance(
-                fin.get("income", 0),
-                prof.get("city", "Kolkata"),
-                prof.get("housing", "Own"),
-                prof.get("vehicle", "Public transport"),
-                prof.get("food", "Cook at home"),
-                prof.get("family_size", 1),
-            )
-            st.session_state.results = results
+            # Validate before compute to ensure consistent state
+            ok_prof, prof_errs = validate_user_profile({
+                "name": prof.get("name"),
+                "age": prof.get("age"),
+                "city": prof.get("city"),
+                "family_size": prof.get("family_size"),
+                "housing": prof.get("housing"),
+                "transport": prof.get("vehicle", prof.get("transport", "Public transport")),
+                "food": prof.get("food"),
+            })
+            ok_fin, fin_errs = validate_financial_inputs({
+                "income": fin.get("income"),
+                "goal_amount": fin.get("savings_goal"),
+                "goal_purpose": fin.get("goal_purpose", ""),
+                "misc_note": fin.get("other_expenses_note", ""),
+                "savings_goal": fin.get("savings_goal"),
+                "other_expenses_note": fin.get("other_expenses_note", ""),
+            })
 
-            # Build pie chart from breakdown if present
-            breakdown = results.get("Breakdown") if isinstance(results, dict) else None
-            png = make_pie_chart(breakdown if isinstance(breakdown, dict) else {})
-            st.session_state.pie_chart_bytes = png
+            if not ok_prof or not ok_fin:
+                for fld, msg in {**prof_errs, **fin_errs}.items():
+                    st.error(f"{fld}: {msg}")
+            else:
+                # Run calculator
+                results = calculate_finance(
+                    fin.get("income", 0),
+                    prof.get("city", "Kolkata"),
+                    prof.get("housing", "Own"),
+                    prof.get("vehicle", "Public transport"),
+                    prof.get("food", "Cook at home"),
+                    prof.get("family_size", 1),
+                )
+                st.session_state.results = results
 
-            # Investment advice
-            advice = suggest_investments(
-                fin.get("income", 0),
-                prof.get("family_size", 1),
-                prof.get("city", "Kolkata"),
-                fin.get("savings_goal", 0),
-                fin.get("goal_purpose", "") or "",
-            )
-            st.session_state.advice = advice
+                # Build pie chart from breakdown if present
+                breakdown = results.get("Breakdown") if isinstance(results, dict) else None
+                png = make_pie_chart(breakdown if isinstance(breakdown, dict) else {})
+                st.session_state.pie_chart_bytes = png
 
-            st.success("Calculated. Proceed to Advice & Report.")
-            st.session_state.step = "Advice & Report"
-            st.experimental_rerun()
+                # Investment advice
+                advice = suggest_investments(
+                    fin.get("income", 0),
+                    prof.get("family_size", 1),
+                    prof.get("city", "Kolkata"),
+                    fin.get("savings_goal", 0),
+                    fin.get("goal_purpose", "") or "",
+                )
+                st.session_state.advice = advice
+
+                st.success("Calculated. Proceed to Advice & Report.")
+                st.session_state.step = "Advice & Report"
+                st.experimental_rerun()
 
         moved = nav_buttons(prev_label="Back", next_label="Next", show_prev=True, show_next=False)
         if moved == "prev":
