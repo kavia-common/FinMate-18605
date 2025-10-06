@@ -5,13 +5,14 @@ import os
 from io import BytesIO
 import datetime
 import json
+from pathlib import Path
 
 import streamlit as st
 import matplotlib.pyplot as plt
 
 from utils.calculator import calculate_finance, load_city_config, calculate
 from utils.report_generator import generate_pdf
-from utils.persistence import init_db, upsert_profile, save_run, save_pdf
+from utils.persistence import init_db, upsert_profile, save_run, save_pdf, list_profiles, list_reports
 from utils.investment_advisor import suggest_investments
 from utils.validators import (
     validate_user_profile,
@@ -30,7 +31,7 @@ try:
     init_db()
 except Exception as _e:
     # Non-fatal for UI; saving may warn later
-    pass
+    st.warning("Local storage initialization failed; history may not be available.")
 
 # -----------------------------------------------------------------------------
 # Helpers and session state
@@ -41,6 +42,20 @@ def _currency_fmt(value: float) -> str:
         return f"₹{float(value):,.0f}"
     except Exception:
         return str(value)
+
+def _human_time(ts: str | None) -> str:
+    """Return a human-readable local timestamp from ISO string."""
+    if not ts:
+        return "Unknown time"
+    try:
+        dt = datetime.datetime.fromisoformat(ts)
+    except Exception:
+        return str(ts)
+    # display in local time if naive
+    try:
+        return dt.strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return str(ts)
 
 def init_state():
     """Initialize st.session_state defaults."""
@@ -67,6 +82,8 @@ def init_state():
         "chart_bytes": None,        # Standardized key for PNG chart bytes
         "history": [],              # simple in-memory history list
         "active_page": "Wizard",    # "Wizard" or "History"
+        "active_profile_id": None,  # Selected profile id for History section
+        "created_profile_flag": False,  # for gentle toast after create
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -449,20 +466,173 @@ if st.session_state.active_page == "Wizard":
 # -----------------------------------------------------------------------------
 if st.session_state.active_page == "History":
     st.header("History")
-    # Placeholder: In-memory entries and optional JSON files in reports directory
-    # TODO: Replace with utils/persistence.py integration for SQLite/file persistence.
-    if st.session_state.history:
-        for i, item in enumerate(reversed(st.session_state.history), start=1):
-            with st.expander(f"Entry {i} - {item.get('timestamp', '')}"):
-                st.write("Profile:", item.get("profile"))
-                st.write("Financials:", item.get("financials"))
-                st.write("Results:")
-                st.json(item.get("results"))
-                st.write("Advice:")
-                advice = item.get("advice") or []
-                for tip in advice:
-                    st.write(f"- {tip}")
+
+    # Profiles area: select or create a profile
+    with st.container():
+        st.subheader("Select Profile")
+        profiles = []
+        try:
+            profiles = list_profiles()
+        except Exception as e:
+            st.warning(f"Could not load profiles: {e}")
+
+        # Build display names
+        display_items = []
+        index_map = {}
+        for idx, p in enumerate(profiles):
+            nm = p.get("name") or "(Unnamed)"
+            mail = p.get("email") or ""
+            label = f"{nm} ({mail})" if mail else nm
+            display_items.append(label)
+            index_map[idx] = p.get("id")
+
+        selected_index = None
+        if display_items:
+            # preselect previous active profile if present
+            try:
+                if st.session_state.active_profile_id is not None:
+                    # find index for the current active id
+                    for i, p in enumerate(profiles):
+                        if p.get("id") == st.session_state.active_profile_id:
+                            selected_index = i
+                            break
+            except Exception:
+                selected_index = None
+
+            choose_index = st.selectbox(
+                "Profiles",
+                options=list(range(len(display_items))),
+                format_func=lambda i: display_items[i],
+                index=selected_index if selected_index is not None else 0,
+            )
+            st.session_state.active_profile_id = index_map.get(choose_index)
+        else:
+            st.info("No profiles yet. Create one below to start saving and viewing report history.")
+            st.session_state.active_profile_id = None
+
+        with st.expander("➕ Create a new profile"):
+            with st.form("create_profile_form"):
+                new_name = st.text_input("Name", value="")
+                new_email = st.text_input("Email (optional)", value="")
+                new_city = st.selectbox("City", ["Kolkata", "Jharkhand"])
+                new_family = st.number_input("Family size", min_value=1, step=1, value=1)
+                new_housing = st.selectbox("Housing", ["Own", "Rent"])
+                new_transport = st.selectbox("Transport", ["Own vehicle", "Public transport"])
+                new_food = st.selectbox("Food", ["Cook at home", "Order food mostly"])
+                create_clicked = st.form_submit_button("Create Profile")
+
+            if create_clicked:
+                payload = {
+                    "name": new_name,
+                    "email": new_email.strip() or None,
+                    "city": new_city,
+                    "family_size": int(new_family),
+                    "housing": new_housing,
+                    "transport": new_transport,
+                    "food": new_food,
+                }
+                ok, errs = validate_user_profile({
+                    "name": payload["name"],
+                    "email": payload["email"],
+                    "city": payload["city"],
+                    "family_size": payload["family_size"],
+                    "housing": payload["housing"],
+                    "transport": payload["transport"],
+                    "food": payload["food"],
+                })
+                if not ok:
+                    for fld, msg in errs.items():
+                        st.error(f"{fld}: {msg}")
+                else:
+                    try:
+                        pid = upsert_profile(payload)
+                        st.session_state.active_profile_id = pid
+                        st.success("Profile created.")
+                        st.session_state.created_profile_flag = True
+                        st.experimental_rerun()
+                    except Exception as e:
+                        st.error(f"Failed to create profile: {e}")
+
+    st.divider()
+
+    # Reports list for selected profile
+    st.subheader("Saved Reports")
+    pid = st.session_state.active_profile_id
+    if not pid:
+        st.info("Select a profile to view its report history.")
     else:
-        st.info("No history saved yet.")
+        try:
+            reports = list_reports(pid)
+        except Exception as e:
+            reports = []
+            st.error(f"Failed to fetch reports: {e}")
+
+        if not reports:
+            st.info("No reports saved yet for this profile.")
+        else:
+            # Render each report with timestamp and actions
+            for rep in reports:
+                created = _human_time(rep.get("created_at"))
+                file_path = rep.get("file_path") or ""
+                file_name = os.path.basename(file_path) if file_path else "(missing)"
+                run_id = rep.get("run_id")
+
+                with st.container():
+                    cols = st.columns([4, 3, 3, 3])
+                    with cols[0]:
+                        st.write(f"• {file_name}")
+                        st.caption(f"Run #{run_id} • Created: {created}")
+                    # Download button
+                    btn_key = f"dl_{rep.get('id')}"
+                    with cols[1]:
+                        if file_path and os.path.exists(file_path):
+                            try:
+                                # Read bytes safely
+                                with open(file_path, "rb") as f:
+                                    data = f.read()
+                                st.download_button(
+                                    label="Download PDF",
+                                    data=data,
+                                    file_name=file_name,
+                                    mime="application/pdf",
+                                    key=btn_key,
+                                )
+                            except Exception as e:
+                                st.warning(f"Unavailable for download: {e}")
+                        else:
+                            st.button("Download PDF", disabled=True, key=btn_key + "_disabled")
+                    # Open button (show in-app)
+                    with cols[2]:
+                        open_key = f"open_{rep.get('id')}"
+                        can_open = file_path and os.path.exists(file_path)
+                        if st.button("Open", key=open_key, disabled=not bool(can_open)):
+                            try:
+                                with open(file_path, "rb") as f:
+                                    pdf_bytes = f.read()
+                                st.session_state[f"preview_{rep.get('id')}"] = pdf_bytes
+                            except Exception as e:
+                                st.warning(f"Could not open file: {e}")
+                    # Path info
+                    with cols[3]:
+                        # show parent dir in muted text for clarity across OS
+                        if file_path:
+                            st.caption(f"Location: {Path(file_path).parent}")
+
+                # Inline preview if opened
+                preview_key = f"preview_{rep.get('id')}"
+                if st.session_state.get(preview_key):
+                    with st.expander(f"Preview: {file_name}", expanded=False):
+                        st.download_button(
+                            label="Download (from preview)",
+                            data=st.session_state[preview_key],
+                            file_name=file_name,
+                            mime="application/pdf",
+                            key=f"dl_prev_{rep.get('id')}",
+                        )
+                        st.write("Preview embedded below:")
+                        try:
+                            st.pdf(st.session_state[preview_key])  # Streamlit 1.39+ provides st.pdf; if not available, fallback below
+                        except Exception:
+                            st.info("Inline PDF preview not supported in this environment.")
 
 st.caption("FinMate Beta v1.1")
