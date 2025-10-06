@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 from utils.calculator import calculate_finance, load_city_config, calculate
 from utils.report_generator import generate_pdf
+from utils.persistence import init_db, upsert_profile, save_run, save_pdf
 from utils.investment_advisor import suggest_investments
 from utils.validators import (
     validate_user_profile,
@@ -23,6 +24,13 @@ st.set_page_config(page_title="FinMate", page_icon=":moneybag:", layout="centere
 # Ensure reports directory exists for saving reports/history artifacts
 REPORTS_DIR = os.path.join(os.path.dirname(__file__), "reports")
 os.makedirs(REPORTS_DIR, exist_ok=True)
+
+# Initialize local SQLite DB (safe to call multiple times)
+try:
+    init_db()
+except Exception as _e:
+    # Non-fatal for UI; saving may warn later
+    pass
 
 # -----------------------------------------------------------------------------
 # Helpers and session state
@@ -55,7 +63,8 @@ def init_state():
         },
         "results": None,            # calculator results
         "advice": None,             # investment advice list
-        "pie_chart_bytes": None,    # PNG bytes of the pie chart
+        "pie_chart_bytes": None,    # PNG bytes of the pie chart (legacy key)
+        "chart_bytes": None,        # Standardized key for PNG chart bytes
         "history": [],              # simple in-memory history list
         "active_page": "Wizard",    # "Wizard" or "History"
     }
@@ -302,6 +311,7 @@ if st.session_state.active_page == "Wizard":
                         breakdown = br
                 png = make_pie_chart(breakdown if isinstance(breakdown, dict) else {})
                 st.session_state.pie_chart_bytes = png
+                st.session_state.chart_bytes = png
 
                 # Investment advice: use normalized signature (financial inputs + profile)
                 try:
@@ -346,9 +356,10 @@ if st.session_state.active_page == "Wizard":
             st.json(st.session_state.results)
 
         # Show pie chart
-        if st.session_state.pie_chart_bytes:
+        chart_bytes = st.session_state.chart_bytes or st.session_state.pie_chart_bytes
+        if chart_bytes:
             st.subheader("Expense Breakdown")
-            st.image(st.session_state.pie_chart_bytes, caption="Expense Breakdown", use_column_width=True)
+            st.image(chart_bytes, caption="Expense Breakdown", use_column_width=True)
 
         # Show investment advice
         if st.session_state.advice:
@@ -364,13 +375,15 @@ if st.session_state.active_page == "Wizard":
             if st.session_state.advice:
                 results_for_pdf["investment_advice"] = st.session_state.advice
 
-            # Prefer passing raw bytes directly; generator accepts bytes or BytesIO
-            pie_buf = st.session_state.pie_chart_bytes if st.session_state.pie_chart_bytes else None
+            # Pass raw bytes if present; generator accepts bytes/BytesIO
+            pie_buf = st.session_state.chart_bytes or st.session_state.pie_chart_bytes or None
 
             # Prepare optional metadata for header
-            user_name = (st.session_state.profile or {}).get("name") or None
-            user_city = (st.session_state.profile or {}).get("city") or None
-            logo_path = "assets/finmate webp.jpg"  # fallback to existing asset if official logo.png absent
+            user_profile = (st.session_state.profile or {})
+            user_name = user_profile.get("name") or None
+            user_city = user_profile.get("city") or None
+            # Prefer official logo if exists; fallback to bundled image
+            logo_path = "assets/logo.png" if os.path.exists(os.path.join(os.path.dirname(__file__), "assets", "logo.png")) else "assets/finmate webp.jpg"
 
             # PDF generation
             pdf_buffer = generate_pdf(
@@ -389,7 +402,7 @@ if st.session_state.active_page == "Wizard":
                 mime="application/pdf"
             )
 
-        # Save to history (placeholder persistence)
+        # Save to history and persist PDF/report if possible
         if st.button("Save to History"):
             entry = {
                 "timestamp": datetime.datetime.now().isoformat(),
@@ -399,7 +412,33 @@ if st.session_state.active_page == "Wizard":
                 "advice": st.session_state.advice,
             }
             save_history_entry(entry)
-            st.success("Saved to history.")
+            # Attempt DB-backed persistence
+            try:
+                # Upsert minimal profile (no email flow in UI; will create by name only)
+                profile_payload = dict(st.session_state.profile or {})
+                # upsert_profile handles missing email
+                profile_id = upsert_profile(profile_payload)
+
+                # Save run snapshot
+                fin_inputs_norm = {
+                    "income": st.session_state.financials.get("income"),
+                    "goal_amount": st.session_state.financials.get("savings_goal"),
+                    "goal_purpose": st.session_state.financials.get("goal_purpose", ""),
+                    "misc_note": st.session_state.financials.get("other_expenses_note", ""),
+                }
+                results_numeric = dict(st.session_state.results or {})
+                advice_list = list(st.session_state.advice or [])
+                run_id = save_run(profile_id, fin_inputs_norm, results_numeric, advice_list)
+
+                # Save PDF if available
+                if pdf_buffer is not None:
+                    pdf_bytes = pdf_buffer.getvalue() if hasattr(pdf_buffer, "getvalue") else bytes(pdf_buffer or b"")
+                    file_path = save_pdf(run_id, profile_id, pdf_bytes)
+                    st.success(f"Saved to history and file: {os.path.basename(file_path)}")
+                else:
+                    st.success("Saved to history.")
+            except Exception as e:
+                st.warning(f"Saved to in-memory history, but persistent save failed: {e}")
         moved = nav_buttons(prev_label="Back", next_label="Finish", show_prev=True, show_next=False)
         if moved == "prev":
             st.session_state.step = "Review & Calculate"
@@ -426,4 +465,4 @@ if st.session_state.active_page == "History":
     else:
         st.info("No history saved yet.")
 
-st.caption("FinMate Beta v1.0")
+st.caption("FinMate Beta v1.1")
