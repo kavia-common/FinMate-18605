@@ -28,7 +28,8 @@ os.makedirs(REPORTS_DIR, exist_ok=True)
 
 # Initialize local SQLite DB (safe to call multiple times)
 try:
-    init_db()
+    with st.spinner("Initializing local storage..."):
+        init_db()
 except Exception as _e:
     # Non-fatal for UI; saving may warn later
     st.warning("Local storage initialization failed; history may not be available.")
@@ -36,10 +37,11 @@ except Exception as _e:
 # -----------------------------------------------------------------------------
 # Helpers and session state
 # -----------------------------------------------------------------------------
-def _currency_fmt(value: float) -> str:
+def _currency_fmt(value: float, decimals: int = 0) -> str:
     """Format a number as a currency string for UI display only."""
     try:
-        return f"₹{float(value):,.0f}"
+        fmt = f"₹{float(value):,.{decimals}f}" if decimals > 0 else f"₹{float(value):,.0f}"
+        return fmt
     except Exception:
         return str(value)
 
@@ -102,9 +104,7 @@ def nav_buttons(prev_label="Back", next_label="Next", show_prev=True, show_next=
     return moved
 
 def save_history_entry(entry: dict):
-    """Placeholder: Save a history entry. Currently appends to in-memory list and writes a JSON snapshot to reports dir.
-    TODO: Replace with utils/persistence.py in step 1.7 for SQLite/file persistence.
-    """
+    """Placeholder: Save a history entry. Currently appends to in-memory list and writes a JSON snapshot to reports dir."""
     st.session_state.history.append(entry)
     try:
         timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -144,10 +144,14 @@ def make_pie_chart(breakdown: dict) -> bytes | None:
     plt.tight_layout()
 
     buf = BytesIO()
-    plt.savefig(buf, format="png", bbox_inches="tight")
-    buf.seek(0)
-    png_bytes = buf.read()
-    plt.close(fig)
+    try:
+        plt.savefig(buf, format="png", bbox_inches="tight")
+        buf.seek(0)
+        png_bytes = buf.read()
+    except Exception:
+        png_bytes = None
+    finally:
+        plt.close(fig)
     return png_bytes
 
 # -----------------------------------------------------------------------------
@@ -216,7 +220,7 @@ if st.session_state.active_page == "Wizard":
                 st.session_state.step = "Income & Goals"
                 st.experimental_rerun()
 
-        moved = nav_buttons(prev_label="Back", next_label="Continue", show_prev=False, show_next=False)
+        nav_buttons(prev_label="Back", next_label="Continue", show_prev=False, show_next=False)
 
     # Step 2: Income & Goals
     elif step == "Income & Goals":
@@ -300,58 +304,72 @@ if st.session_state.active_page == "Wizard":
                     st.error(f"{fld}: {msg}")
             else:
                 # Run calculator with new API (numeric-only results)
-                try:
-                    base_dir = os.path.dirname(__file__)
-                    city_cfg = load_city_config(base_dir, prof.get("city", "Kolkata"))
-                    fin_inputs = {"income": fin.get("income", 0)}
-                    profile_norm = {
-                        "city": prof.get("city", "Kolkata"),
-                        "housing": prof.get("housing", "Own"),
-                        "transport": prof.get("vehicle", prof.get("transport", "Public transport")),
-                        "food": prof.get("food", "Cook at home"),
-                        "family_size": prof.get("family_size", 1),
-                    }
-                    numeric_results = calculate(fin_inputs, profile_norm, city_cfg)
-                    # Also add a suggested SIP value here for convenience in UI and downstream usage
-                    numeric_results["suggested_sip"] = max(0.0, float(numeric_results.get("savings", 0.0)) * 0.30)
-                    st.session_state.results = numeric_results
-                except Exception as e:
-                    st.session_state.results = None
-                    st.error(f"Calculation failed: {e}")
-                    numeric_results = None
+                numeric_results = None
+                with st.spinner("Running financial analysis..."):
+                    try:
+                        base_dir = os.path.dirname(__file__)
+                        # Graceful handling of missing or malformed configs done inside load_city_config
+                        city_cfg = load_city_config(base_dir, prof.get("city", "Kolkata"))
+                        fin_inputs = {"income": fin.get("income", 0)}
+                        profile_norm = {
+                            "city": prof.get("city", "Kolkata"),
+                            "housing": prof.get("housing", "Own"),
+                            "transport": prof.get("vehicle", prof.get("transport", "Public transport")),
+                            "food": prof.get("food", "Cook at home"),
+                            "family_size": prof.get("family_size", 1),
+                        }
+                        numeric_results = calculate(fin_inputs, profile_norm, city_cfg)
+                        # Also add a suggested SIP value here for convenience in UI and downstream usage
+                        numeric_results["suggested_sip"] = max(0.0, float(numeric_results.get("savings", 0.0)) * 0.30)
+                        st.session_state.results = numeric_results
+                    except Exception as e:
+                        st.session_state.results = None
+                        st.error(f"Calculation failed: {e}")
 
-                # Build pie chart from numeric breakdown if present
-                breakdown = None
-                if isinstance(numeric_results, dict):
-                    br = numeric_results.get("breakdown", {})
-                    if isinstance(br, dict):
-                        breakdown = br
-                png = make_pie_chart(breakdown if isinstance(breakdown, dict) else {})
-                st.session_state.pie_chart_bytes = png
-                st.session_state.chart_bytes = png
+                # If results exist, build pie and advice
+                if st.session_state.results:
+                    # Build pie chart from numeric breakdown if present
+                    breakdown = None
+                    if isinstance(numeric_results, dict):
+                        br = numeric_results.get("breakdown", {})
+                        if isinstance(br, dict):
+                            breakdown = br
+                    with st.spinner("Preparing charts..."):
+                        png = make_pie_chart(breakdown if isinstance(breakdown, dict) else {})
+                        st.session_state.pie_chart_bytes = png
+                        st.session_state.chart_bytes = png
 
-                # Investment advice: use normalized signature (financial inputs + profile)
-                try:
-                    fin_inputs_norm = {
-                        "income": fin.get("income", 0),
-                        "goal_amount": fin.get("savings_goal", 0),
-                        "goal_purpose": fin.get("goal_purpose", "") or "",
-                    }
-                    profile_norm_for_advice = {
-                        "city": prof.get("city", "Kolkata"),
-                        "family_size": prof.get("family_size", 1),
-                        "housing": prof.get("housing", "Own"),
-                        "transport": prof.get("vehicle", prof.get("transport", "Public transport")),
-                        "food": prof.get("food", "Cook at home"),
-                    }
-                    advice = suggest_investments(fin_inputs_norm, profile_norm_for_advice)
-                except Exception as e:
-                    advice = [f"Advice generation error: {e}"]
-                st.session_state.advice = advice
+                    # Investment advice: use normalized signature (financial inputs + profile)
+                    try:
+                        fin_inputs_norm = {
+                            "income": fin.get("income", 0),
+                            "goal_amount": fin.get("savings_goal", 0),
+                            "goal_purpose": fin.get("goal_purpose", "") or "",
+                        }
+                        profile_norm_for_advice = {
+                            "city": prof.get("city", "Kolkata"),
+                            "family_size": prof.get("family_size", 1),
+                            "housing": prof.get("housing", "Own"),
+                            "transport": prof.get("vehicle", prof.get("transport", "Public transport")),
+                            "food": prof.get("food", "Cook at home"),
+                        }
+                        with st.spinner("Generating investment suggestions..."):
+                            advice = suggest_investments(fin_inputs_norm, profile_norm_for_advice)
+                    except Exception as e:
+                        advice = [f"Advice generation error: {e}"]
+                    st.session_state.advice = advice
 
-                st.success("Calculated. Proceed to Advice & Report.")
-                st.session_state.step = "Advice & Report"
-                st.experimental_rerun()
+                    # Handle zero/negative savings gracefully with friendly nudge
+                    try:
+                        sv = float(st.session_state.results.get("savings", 0.0) or 0.0)
+                        if sv <= 0:
+                            st.info("Your estimated savings are zero or negative. Consider reducing expenses or setting a smaller short-term goal.")
+                    except Exception:
+                        pass
+
+                    st.success("Calculated. Proceed to Advice & Report.")
+                    st.session_state.step = "Advice & Report"
+                    st.experimental_rerun()
 
         moved = nav_buttons(prev_label="Back", next_label="Next", show_prev=True, show_next=False)
         if moved == "prev":
@@ -361,6 +379,17 @@ if st.session_state.active_page == "Wizard":
         # Show interim JSON if already computed
         if st.session_state.results:
             st.subheader("Current Results")
+            # Provide a compact user-friendly summary before raw JSON
+            totals = st.session_state.results
+            try:
+                st.write(
+                    f"Income: {_currency_fmt(totals.get('income', 0))} • "
+                    f"Expenses: {_currency_fmt(totals.get('total_expenses', 0))} • "
+                    f"Savings: {_currency_fmt(totals.get('savings', 0))} • "
+                    f"Suggested SIP: {_currency_fmt(totals.get('suggested_sip', 0))}"
+                )
+            except Exception:
+                pass
             st.json(st.session_state.results)
 
     # Step 4: Advice & Report
@@ -370,13 +399,26 @@ if st.session_state.active_page == "Wizard":
         # Display analysis results
         if st.session_state.results:
             st.subheader("Financial Analysis")
+            totals = st.session_state.results
+            try:
+                st.write(
+                    f"Income: {_currency_fmt(totals.get('income', 0))} • "
+                    f"Expenses: {_currency_fmt(totals.get('total_expenses', 0))} • "
+                    f"Savings: {_currency_fmt(totals.get('savings', 0))} • "
+                    f"Suggested SIP: {_currency_fmt(totals.get('suggested_sip', 0))}"
+                )
+            except Exception:
+                pass
             st.json(st.session_state.results)
 
         # Show pie chart
         chart_bytes = st.session_state.chart_bytes or st.session_state.pie_chart_bytes
         if chart_bytes:
             st.subheader("Expense Breakdown")
-            st.image(chart_bytes, caption="Expense Breakdown", use_column_width=True)
+            try:
+                st.image(chart_bytes, caption="Expense Breakdown", use_column_width=True)
+            except Exception:
+                st.info("Chart is unavailable due to an internal error.")
 
         # Show investment advice
         if st.session_state.advice:
@@ -403,21 +445,24 @@ if st.session_state.active_page == "Wizard":
             logo_path = "assets/logo.png" if os.path.exists(os.path.join(os.path.dirname(__file__), "assets", "logo.png")) else "assets/finmate webp.jpg"
 
             # PDF generation
-            pdf_buffer = generate_pdf(
-                results_for_pdf,
-                pie_chart_buffer=pie_buf,
-                user_name=user_name,
-                city=user_city,
-                logo_path=logo_path,
-            )
-
-            # Download button
-            st.download_button(
-                label="📥 Download PDF Report",
-                data=pdf_buffer,
-                file_name="FinMate_Report.pdf",
-                mime="application/pdf"
-            )
+            try:
+                with st.spinner("Generating PDF report..."):
+                    pdf_buffer = generate_pdf(
+                        results_for_pdf,
+                        pie_chart_buffer=pie_buf,
+                        user_name=user_name,
+                        city=user_city,
+                        logo_path=logo_path,
+                    )
+                st.download_button(
+                    label="📥 Download PDF Report",
+                    data=pdf_buffer,
+                    file_name="FinMate_Report.pdf",
+                    mime="application/pdf"
+                )
+            except Exception as e:
+                st.error(f"PDF generation failed: {e}")
+                pdf_buffer = None
 
         # Save to history and persist PDF/report if possible
         if st.button("Save to History"):
@@ -431,29 +476,36 @@ if st.session_state.active_page == "Wizard":
             save_history_entry(entry)
             # Attempt DB-backed persistence
             try:
-                # Upsert minimal profile (no email flow in UI; will create by name only)
-                profile_payload = dict(st.session_state.profile or {})
-                # upsert_profile handles missing email
-                profile_id = upsert_profile(profile_payload)
+                with st.spinner("Saving run to history..."):
+                    # Upsert minimal profile (no email flow in UI; will create by name only)
+                    profile_payload = dict(st.session_state.profile or {})
+                    # upsert_profile handles missing email
+                    profile_id = upsert_profile(profile_payload)
 
-                # Save run snapshot
-                fin_inputs_norm = {
-                    "income": st.session_state.financials.get("income"),
-                    "goal_amount": st.session_state.financials.get("savings_goal"),
-                    "goal_purpose": st.session_state.financials.get("goal_purpose", ""),
-                    "misc_note": st.session_state.financials.get("other_expenses_note", ""),
-                }
-                results_numeric = dict(st.session_state.results or {})
-                advice_list = list(st.session_state.advice or [])
-                run_id = save_run(profile_id, fin_inputs_norm, results_numeric, advice_list)
+                    # Save run snapshot
+                    fin_inputs_norm = {
+                        "income": st.session_state.financials.get("income"),
+                        "goal_amount": st.session_state.financials.get("savings_goal"),
+                        "goal_purpose": st.session_state.financials.get("goal_purpose", ""),
+                        "misc_note": st.session_state.financials.get("other_expenses_note", ""),
+                    }
+                    results_numeric = dict(st.session_state.results or {})
+                    advice_list = list(st.session_state.advice or [])
+                    run_id = save_run(profile_id, fin_inputs_norm, results_numeric, advice_list)
 
-                # Save PDF if available
-                if pdf_buffer is not None:
-                    pdf_bytes = pdf_buffer.getvalue() if hasattr(pdf_buffer, "getvalue") else bytes(pdf_buffer or b"")
-                    file_path = save_pdf(run_id, profile_id, pdf_bytes)
-                    st.success(f"Saved to history and file: {os.path.basename(file_path)}")
-                else:
-                    st.success("Saved to history.")
+                    # Save PDF if available
+                    if pdf_buffer is not None:
+                        try:
+                            pdf_bytes = pdf_buffer.getvalue() if hasattr(pdf_buffer, "getvalue") else bytes(pdf_buffer or b"")
+                        except Exception:
+                            pdf_bytes = b""
+                        try:
+                            file_path = save_pdf(run_id, profile_id, pdf_bytes)
+                            st.success(f"Saved to history and file: {os.path.basename(file_path)}")
+                        except Exception as e:
+                            st.warning(f"Run saved, but PDF file could not be saved: {e}")
+                    else:
+                        st.success("Saved to history.")
             except Exception as e:
                 st.warning(f"Saved to in-memory history, but persistent save failed: {e}")
         moved = nav_buttons(prev_label="Back", next_label="Finish", show_prev=True, show_next=False)
@@ -472,7 +524,8 @@ if st.session_state.active_page == "History":
         st.subheader("Select Profile")
         profiles = []
         try:
-            profiles = list_profiles()
+            with st.spinner("Loading profiles..."):
+                profiles = list_profiles()
         except Exception as e:
             st.warning(f"Could not load profiles: {e}")
 
@@ -545,7 +598,8 @@ if st.session_state.active_page == "History":
                         st.error(f"{fld}: {msg}")
                 else:
                     try:
-                        pid = upsert_profile(payload)
+                        with st.spinner("Creating profile..."):
+                            pid = upsert_profile(payload)
                         st.session_state.active_profile_id = pid
                         st.success("Profile created.")
                         st.session_state.created_profile_flag = True
@@ -562,7 +616,8 @@ if st.session_state.active_page == "History":
         st.info("Select a profile to view its report history.")
     else:
         try:
-            reports = list_reports(pid)
+            with st.spinner("Fetching reports..."):
+                reports = list_reports(pid)
         except Exception as e:
             reports = []
             st.error(f"Failed to fetch reports: {e}")
@@ -635,4 +690,4 @@ if st.session_state.active_page == "History":
                         except Exception:
                             st.info("Inline PDF preview not supported in this environment.")
 
-st.caption("FinMate Beta v1.1")
+st.caption("FinMate Beta v1.2")

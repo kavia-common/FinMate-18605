@@ -193,7 +193,7 @@ def validate_financial_inputs(inputs: Any) -> Tuple[bool, Dict[str, str]]:
             errors["income"] = msg
 
     goal_amount = get(inputs, "goal_amount", get(inputs, "savings_goal"))
-    if goal_amount is None:
+    if goal_amount is None or str(goal_amount).strip() == "":
         errors["goal_amount"] = "Savings goal is required."
     else:
         ok, msg = is_positive_number(goal_amount, "Savings goal")
@@ -202,11 +202,11 @@ def validate_financial_inputs(inputs: Any) -> Tuple[bool, Dict[str, str]]:
 
     # goal_purpose and misc_note are optional; trim if present
     goal_purpose = get(inputs, "goal_purpose", "")
-    if isinstance(goal_purpose, str) and len(goal_purpose) > 256:
+    if isinstance(goal_purpose, str) and len(goal_purpose.strip()) > 256:
         errors["goal_purpose"] = "Goal purpose is too long (max 256 characters)."
 
     misc_note = get(inputs, "misc_note", get(inputs, "other_expenses_note", ""))
-    if isinstance(misc_note, str) and len(misc_note) > 500:
+    if isinstance(misc_note, str) and len(misc_note.strip()) > 500:
         errors["misc_note"] = "Additional note is too long (max 500 characters)."
 
     return len(errors) == 0, errors
